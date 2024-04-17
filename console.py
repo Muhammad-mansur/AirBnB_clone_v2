@@ -73,7 +73,7 @@ class HBNBCommand(cmd.Cmd):
                 pline = pline[2].strip()  # pline is now str
                 if pline:
                     # check for *args or **kwargs
-                    if pline[0] is '{' and pline[-1] is'}'\
+                    if pline[0] == '{' and pline[-1] is'}'\
                             and type(eval(pline)) is dict:
                         _args = pline
                     else:
@@ -113,18 +113,51 @@ class HBNBCommand(cmd.Cmd):
         """ Overrides the emptyline method of CMD """
         pass
 
-    def do_create(self, args):
-        """ Create an object of any class"""
-        if not args:
-            print("** class name missing **")
+    def do_create(self, arg):
+        """Creates a new object and saves it to storage."""
+
+        args = arg.split()  # Split arguments into a list
+
+        if len(args) < 2:  # Check for minimum arguments (class name)
+            print("Usage: create <Class name> [<key>=<value> ...]")
             return
-        elif args not in HBNBCommand.classes:
-            print("** class doesn't exist **")
+
+        class_name = args[0]  # Get class name
+        try:
+            target_class = getattr(BaseModel, class_name)  # Get class reference
+        except AttributeError:
+            print(f"Error: class '{class_name}' does not exist")
             return
-        new_instance = HBNBCommand.classes[args]()
+
+        # Initialize empty dictionary for parameters
+        params = {}
+
+        for arg in args[1:]:  # Iterate through remaining arguments
+            try:
+                key, value = arg.split("=", 1)  # Split key and value
+            except ValueError:  # Skip arguments without '='
+                continue
+
+            # Handle string values (escape quotes, replace underscores)
+            if value.startswith('"') and value.endswith('"'):
+                value = value[1:-1].replace("\\", "").replace("_", " ")
+            else:
+                # Try converting to float, otherwise assume integer
+                try:
+                    value = float(value)
+                except ValueError:
+                    pass
+
+            params[key] = value  # Add parameter to dictionary
+
+        # Create new object and set attributes
+        new_object = target_class(**params)
+
+        # Save the object using FileStorage
+        storage.new(new_object)
         storage.save()
-        print(new_instance.id)
-        storage.save()
+
+        print(f"{class_name} object created. ID: {new_object.id}")
 
     def help_create(self):
         """ Help information for the create method """
