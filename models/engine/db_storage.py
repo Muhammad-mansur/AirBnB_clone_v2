@@ -4,7 +4,7 @@
 from os import getenv
 from sqlalchemy import create_engine
 from models.base_model import Base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, scoped_session
 from models.user import User
 from models.state import State
 from models.city import City
@@ -41,7 +41,14 @@ class DBStorage:
             Base.metadata.drop_all(self.__engine)
 
     def all(self, cls=None):
-        """ All """
+        """ Query on the current database session (self.__session) all objects 
+        depending on the class name (argument cls). If cls=None, query all 
+        types of objects (User, State, City, Amenity, Place, and Review).
+        
+        This method returns a dictionary:
+        key = <class-name>.<object-id>
+        value = object """
+
         obj_dic = {}
 
         if cls:
@@ -52,3 +59,31 @@ class DBStorage:
                 for obj in objects:
                     key = f"{obj.__class__.__name__}.{obj.id}"
                     obj_dic[key] = obj
+        else:
+            for class_name, class_type in classes.items():
+                objects = self.__session.query(class_type).all()
+                for obj in objects:
+                    key = f"{obj.__class__.__name__}.{obj.id}"
+                    obj_dic[key] = obj
+
+        return obj_dic
+
+    def new(self, obj):
+        """ Adds a new object to the current database session """
+        self.__session.add(obj)
+
+    def save(self):
+        """ Saves all changes of the current database session """
+        self.__session.commit()
+
+    def delete(self, obj=None):
+        """ Deletes from the current database session """
+        if obj:
+            self.__session.delete(obj)
+
+    def reload(self):
+        """ creates all the tables in database """
+        Base.metadata.create_all(self.__engine)
+        session = sessionmaker(bind=self.__engine, expire_on_commit=False)
+        Session = scoped_session(session)
+        self.__session = Session
