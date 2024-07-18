@@ -1,5 +1,4 @@
 from fabric import Connection, task
-from fabric.tasks import task
 from os.path import exists
 import os
 
