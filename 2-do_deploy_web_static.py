@@ -1,40 +1,33 @@
-#!/usr/bin/python3
-""" Distributes an archive to your web servers, using the function do_deploy """
-from fabric.api import env, put, run
+from fabric import Connection, task
+from fabric.tasks import task
+from os.path import exists
 import os
 
+env_hosts = ['52.3.246.184', '100.25.15.100']
 
-# Define the web servers
-env.hosts = ['54.236.26.75', '54.157.148.181']
-
-def do_deploy(archive_path):
-    """Distributes an archive to web servers"""
-    if not os.path.exists(archive_path):
+@task
+def do_deploy(c, archive_path):
+    """Distributes an archive to the web servers"""
+    if not exists(archive_path):
         return False
 
     try:
-        # Upload the archive to the /tmp/ directory of the web server
-        archive_filename = os.path.basename(archive_path)
-        archive_foldername = archive_filename.split('.')[0]
-        tmp_path = f"/tmp/{archive_filename}"
-
-        put(archive_path, tmp_path)
-
-        # Uncompress the archive to the folder /data/web_static/releases/<archive filename without extension>
-        release_folder = f"/data/web_static/releases/{archive_foldername}"
-        run(f"mkdir -p {release_folder}")
-        run(f"tar -xzf {tmp_path} -C {release_folder}")
-        run(f"rm {tmp_path}")
-        run(f"mv {release_folder}/web_static/* {release_folder}")
-        run(f"rm -rf {release_folder}/web_static")
-
-        # Delete the symbolic link /data/web_static/current from the web server
-        run("rm -rf /data/web_static/current")
-
-        # Create a new symbolic link /data/web_static/current on the web server, linked to the new version
-        run(f"ln -s {release_folder} /data/web_static/current")
-
+        file_n = os.path.basename(archive_path)
+        no_ext = file_n.split(".")[0]
+        path = "/data/web_static/releases/"
+        
+        for host in env_hosts:
+            conn = Connection(host)
+            conn.put(archive_path, '/tmp/')
+            conn.run(f'mkdir -p {path}{no_ext}/')
+            conn.run(f'tar -xzf /tmp/{file_n} -C {path}{no_ext}/')
+            conn.run(f'rm /tmp/{file_n}')
+            conn.run(f'mv {path}{no_ext}/web_static/* {path}{no_ext}/')
+            conn.run(f'rm -rf {path}{no_ext}/web_static')
+            conn.run('rm -rf /data/web_static/current')
+            conn.run(f'ln -s {path}{no_ext}/ /data/web_static/current')
+        
         return True
-
-    except:
+    except Exception as e:
+        print(f"Error: {e}")
         return False
