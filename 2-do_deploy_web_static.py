@@ -1,52 +1,51 @@
-from fabric import Connection, task
-import os
+from fabric.api import *
+from fabric.contrib.files import exists
 
-env_hosts = ['xx-web-01', 'xx-web-02']
+env.user = "mansur"
+env.hosts = ["52.3.246.184", "100.25.15.100"]
 
 def do_deploy(archive_path):
-    """Distributes an archive to web servers"""
-    if not os.path.exists(archive_path):
-        return False
+  """
+  Deploys the archive to the web servers.
 
-    try:
-        # Archive path components
-        archive_filename = os.path.basename(archive_path)
-        archive_foldername = archive_filename.split('.')[0]
-        tmp_path = f"/tmp/{archive_filename}"
-        release_folder = f"/data/web_static/releases/{archive_foldername}"
+  Args:
+      archive_path: Path to the archive file.
 
-        for host in env_hosts:
-            # Establish connection to the host
-            conn = Connection(host)
+  Returns:
+      True if successful, False otherwise.
+  """
+  if not exists(archive_path):
+    print(f"Archive file {archive_path} does not exist.")
+    return False
 
-            # Upload the archive to the /tmp/ directory of the web server
-            conn.put(archive_path, tmp_path)
+  # Upload archive to /tmp/ on web servers
+  with settings(warn_only=True):
+    result = put(archive_path, remote="/tmp/")
+  if not result.succeeded:
+    print("Failed to upload archive.")
+    return False
 
-            # Uncompress the archive to the release folder
-            conn.run(f"mkdir -p {release_folder}")
-            conn.run(f"tar -xzf {tmp_path} -C {release_folder}")
-            conn.run(f"rm {tmp_path}")
+  # Extract archive to release directory
+  filename = os.path.basename(archive_path).split(".")[0]
+  remote_dir = f"/data/web_static/releases/{filename}"
+  run(f"tar -xzf /tmp/{os.path.basename(archive_path)} -C {remote_dir}")
 
-            # Move contents out of the web_static folder
-            conn.run(f"mv {release_folder}/web_static/* {release_folder}/")
-            conn.run(f"rm -rf {release_folder}/web_static")
+  # Delete archive
+  run(f"rm /tmp/{os.path.basename(archive_path)}")
 
-            # Delete the symbolic link /data/web_static/current from the web server
-            conn.run("rm -rf /data/web_static/current")
+  # Delete existing current symlink
+  with settings(warn_only=True):
+    run(f"rm /data/web_static/current")
 
-            # Create a new symbolic link /data/web_static/current on the web server, linked to the new version
-            conn.run(f"ln -s {release_folder} /data/web_static/current")
+  # Create new symlink to released version
+  run(f"ln -s {remote_dir} /data/web_static/current")
 
-        return True
+  print("Deployment successful!")
+  return True
 
-    except Exception as e:
-        print(f"Error: {e}")
-        return False
+# Example usage with SSH key argument
+# fab do_deploy:archive_path=path/to/your/archive.tar.gz
 
-@task
-def deploy(c, archive_path):
-    """Task to deploy the archive to the servers"""
-    if do_deploy(archive_path):
-        print("Deployment successful")
-    else:
-        print("Deployment failed")
+if __name__ == "__main__":
+  # You can add additional arguments parsing here if needed
+  pass
