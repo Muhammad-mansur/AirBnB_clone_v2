@@ -15,7 +15,7 @@ def do_deploy(c, archive_path):
         file_n = os.path.basename(archive_path)
         no_ext = file_n.split(".")[0]
         path = "/data/web_static/releases/"
-        
+
         for host in env_hosts:
             conn = Connection(host)
             conn.put(archive_path, '/tmp/')
@@ -26,7 +26,7 @@ def do_deploy(c, archive_path):
             conn.run(f'rm -rf {path}{no_ext}/web_static')
             conn.run('rm -rf /data/web_static/current')
             conn.run(f'ln -s {path}{no_ext}/ /data/web_static/current')
-        
+
         return True
     except Exception as e:
         print(f"Error: {e}")
