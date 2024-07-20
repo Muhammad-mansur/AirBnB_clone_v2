@@ -3,7 +3,8 @@
 from fabric import Connection, task
 import os
 
-""" Distributes an archive to your web servers, using the function do_deploy """
+""" Distributes an archive to your web servers,
+using the function do_deploy """
 
 env_hosts = ["52.3.246.184", "100.25.15.100"]
 
@@ -22,7 +23,8 @@ def do_deploy(c, archive_path):
     try:
         # Loop through each host and perform operations
         for host in env_hosts:
-            conn = Connection(host)
+            conn = Connection(host, user=c.user, connect_kwargs=
+                    {"key_filename": c.connect_kwargs["key_filename"]})
             conn.put(archive_path, '/tmp')
             conn.run(f'mkdir -p {dest}')
             conn.run(f'tar -xzf /tmp/{name}.tgz -C {dest}')
