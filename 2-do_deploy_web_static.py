@@ -1,11 +1,9 @@
 #!/usr/bin/python3
-
+"""Distributes an archive to your web servers, using the function do_deploy"""
 from fabric import Connection, task
 import os
 
-""" Distributes an archive to your web servers,
-using the function do_deploy """
-
+# Define the hosts
 env_hosts = ["52.3.246.184", "100.25.15.100"]
 
 
@@ -15,10 +13,12 @@ def do_deploy(c, archive_path):
     if not os.path.exists(archive_path):
         return False
 
-    data_path = '/data/web_static/releases/'
-    tmp = archive_path.split('.')[0]
-    name = tmp.split('/')[1]
-    dest = data_path + name
+    # Extract the archive file name and the name without extension
+    archive_file = os.path.basename(archive_path)
+    name_no_ext = os.path.splitext(archive_file)[0]
+
+    # Define the destination directory
+    dest = f"/data/web_static/releases/{name_no_ext}/"
 
     try:
         # Loop through each host and perform operations
@@ -28,14 +28,31 @@ def do_deploy(c, archive_path):
                 user=c.user,
                 connect_kwargs={
                     "key_filename": c.connect_kwargs["key_filename"]})
-            conn.put(archive_path, '/tmp')
+
+            # Upload the archive to the /tmp/ directory on the server
+            conn.put(archive_path, '/tmp/')
+
+            # Create the destination directory
             conn.run(f'mkdir -p {dest}')
-            conn.run(f'tar -xzf /tmp/{name}.tgz -C {dest}')
-            conn.run(f'rm -f /tmp/{name}.tgz')
-            conn.run(f'mv {dest}/web_static/* {dest}/')
-            conn.run(f'rm -rf {dest}/web_static')
+
+            # Uncompress the archive to the destination directory
+            conn.run(f'tar -xzf /tmp/{archive_file} -C {dest}')
+
+            # Remove the archive from the /tmp/ directory
+            conn.run(f'rm /tmp/{archive_file}')
+
+            # Move the contents of the web_static to the destination directory
+            conn.run(f'mv {dest}web_static/* {dest}')
+
+            # Remove the now empty web_static directory
+            conn.run(f'rm -rf {dest}web_static')
+
+            # Remove the existing symbolic link
             conn.run('rm -rf /data/web_static/current')
+
+            # Create a new symbolic link to the new version
             conn.run(f'ln -s {dest} /data/web_static/current')
+
         return True
     except Exception as e:
         print(e)
