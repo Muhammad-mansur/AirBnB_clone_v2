@@ -1,13 +1,12 @@
 #!/usr/bin/python3
 """
-Fabric script that creates and distributes an archive to your web servers
+Fabric script that creates and distributes an archive to your web servers.
 """
-
 from fabric.api import local, put, run, env
-from os.path import exists
 from datetime import datetime
+from os.path import exists
 
-# Define your hosts
+# Define your hosts and user
 env.hosts = ['52.3.246.184', '100.25.15.100']
 env.user = 'ubuntu'
 env.key_filename = 'my_ssh_private_key'
@@ -27,8 +26,11 @@ def do_pack():
         
         # Check if the archive was created
         if exists(archive_path):
+            print(f"Archive created at: {archive_path}")
             return archive_path
-        return None
+        else:
+            print("Failed to create archive.")
+            return None
     except Exception as e:
         print(f"An error occurred while packing: {e}")
         return None
@@ -36,6 +38,7 @@ def do_pack():
 def do_deploy(archive_path):
     """Distributes an archive to your web servers"""
     if not exists(archive_path):
+        print(f"Archive path {archive_path} does not exist.")
         return False
     
     try:
@@ -59,6 +62,7 @@ def do_deploy(archive_path):
         run("rm -rf /data/web_static/current")
         run(f"ln -s {dest} /data/web_static/current")
         
+        print("Deployment successful!")
         return True
     except Exception as e:
         print(f"An error occurred while deploying: {e}")
