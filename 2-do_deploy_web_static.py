@@ -1,13 +1,12 @@
 #!/usr/bin/python3
 """Distributes an archive to your web servers using the function do_deploy"""
-from fabric.api import env, put, run, sudo
+from fabric.api import env, put, run, local
 import os
 
 # Define the hosts
 env.hosts = ["52.3.246.184", "100.25.15.100"]
 env.user = 'ubuntu'
 env.key_filename = 'path_to_your_ssh_key'
-
 
 def do_deploy(archive_path):
     """Function for deploying the web static archive to web servers"""
@@ -44,10 +43,7 @@ def do_deploy(archive_path):
         # Create a new symbolic link to the new version
         run(f'ln -s {dest} /data/web_static/current')
 
-        # Ensure the HTML files are present in the correct location
-        run(f'touch {dest}0-index.html')
-        run(f'touch {dest}my_index.html')
-
+        print("New version deployed!")
         return True
     except Exception as e:
         print(e)
