@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 """Distributes an archive to your web servers, using the function do_deploy"""
-from fabric.api import Connection, task
+from fabric.api import *
+from fabric import Connection, task
 import os
 
 # Define the hosts
