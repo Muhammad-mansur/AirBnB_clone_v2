@@ -23,8 +23,11 @@ def do_deploy(c, archive_path):
     try:
         # Loop through each host and perform operations
         for host in env_hosts:
-            conn = Connection(host, user=c.user, connect_kwargs=
-                              {"key_filename": c.connect_kwargs["key_filename"]})
+            conn = Connection(
+                host,
+                user=c.user,
+                connect_kwargs={"key_filename":
+                    c.connect_kwargs["key_filename"]})
             conn.put(archive_path, '/tmp')
             conn.run(f'mkdir -p {dest}')
             conn.run(f'tar -xzf /tmp/{name}.tgz -C {dest}')
