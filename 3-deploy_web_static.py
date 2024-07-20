@@ -8,8 +8,9 @@ from os.path import exists
 
 # Define your hosts and user
 env.hosts = ['52.3.246.184', '100.25.15.100']
+env.port = 22
 env.user = 'ubuntu'
-env.key_filename = 'my_ssh_private_key'
+env.key_filename = '~/.ssh/id_rsa'
 
 def do_pack():
     """Generates a .tgz archive from the contents of the web_static folder"""
