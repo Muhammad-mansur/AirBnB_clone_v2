@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-""" 1. HBNB """
+""" 2. C is fun """
 
 from flask import Flask
 
@@ -15,6 +15,9 @@ def hello_hbnb():
 def hbnb():
     """ Function that returns HBNB """
     return "HBNB"
+
+@app.route("/c/<text>", strict_slashes=False)
+def c_is_fun():
 
 
 if __name__ == "__main":
